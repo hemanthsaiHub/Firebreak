@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firebreak: stop a rumor by protecting the right accounts</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#ECEFF6;--panel:#fff;--ink:#14183A;--muted:#5B6382;--line:#D5DAE8;--rumor:#D6336C;--shield:#1971C2;--quiet:#9AA5C4;
+--head:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;--body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 var(--body)}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 20px 64px}
+h1{font:700 clamp(38px,6vw,64px)/1 var(--head);margin:0;letter-spacing:-1.5px}
+.sub{font-size:20px;color:var(--muted);margin:10px 0 28px;max-width:56ch}
+form{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px 18px;align-items:end}
+label{display:block;font-size:14px;font-weight:600;margin-bottom:4px}
+label output{float:right;font-weight:400;color:var(--muted)}
+select,input[type=number]{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff;color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--shield)}
+button{font:600 16px var(--body);cursor:pointer}
+.run{padding:12px 18px;border:0;border-radius:8px;background:var(--ink);color:#fff}
+.run:hover{background:#262C5E}.run:disabled{opacity:.6;cursor:wait}
+:focus-visible{outline:3px solid var(--shield);outline-offset:2px}
+.stage{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+.pane{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.pane h2{font:700 20px var(--head);margin:0}
+.pane p{margin:2px 0 8px;color:var(--muted);font-size:15px}
+canvas{width:100%;display:block;border-radius:8px;background:#F7F8FC}
+.count b{font:700 26px var(--head);color:var(--rumor)}
+.bar-ctl{display:flex;gap:14px;align-items:center;margin:14px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 16px}
+.bar-ctl input{flex:1}
+.play{padding:8px 16px;border:2px solid var(--ink);border-radius:8px;background:transparent;color:var(--ink);min-width:84px}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:var(--muted);margin:8px 2px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.results{margin-top:24px;display:grid;grid-template-columns:1.1fr 1fr;gap:24px;align-items:start}
+.results h2{font:700 24px var(--head);margin:0 0 6px}
+.summary{font-size:19px;line-height:1.5;margin:0}
+.rows{display:flex;flex-direction:column;gap:8px}
+.row{all:unset;cursor:pointer;display:grid;grid-template-columns:150px 1fr 96px;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;border:2px solid transparent;font-size:15px}
+.row:hover{background:#fff}
+.row[aria-pressed=true]{background:#fff;border-color:var(--shield)}
+.row:focus-visible{outline:3px solid var(--shield)}
+.track{height:14px;background:#DDE2F0;border-radius:7px;overflow:hidden}
+.track b{display:block;height:100%;background:var(--quiet);border-radius:7px}
+.row.none .track b{background:var(--rumor)}.row.greedy .track b{background:var(--shield)}
+.val{text-align:right;font-variant-numeric:tabular-nums}.val small{display:block;color:var(--muted)}
+.err{background:#fff;border:2px solid var(--rumor);border-radius:8px;padding:14px;color:var(--rumor);margin-top:16px}
+.foot{margin-top:36px;color:var(--muted);font-size:14px;max-width:80ch}
+@media (max-width:820px){.stage,.results{grid-template-columns:1fr}.row{grid-template-columns:110px 1fr 84px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Firebreak</h1>
+<p class="sub">A rumor spreads through a social network. Find the few accounts to protect so it stops early.</p>
+
+<form id="form">
+  <div><label for="network">Network</label>
+    <select id="network"><option value="scale_free">Influencer network</option><option value="small_world">Friend groups</option><option value="communities">Echo chambers</option></select></div>
+  <div><label for="n">Accounts <output id="n_o">150</output></label><input id="n" type="range" min="40" max="300" step="10" value="150"></div>
+  <div><label for="p">Chance a share passes it on <output id="p_o">25%</output></label><input id="p" type="range" min="5" max="60" step="1" value="25"></div>
+  <div><label for="seeds">Rumor starters <output id="seeds_o">2</output></label><input id="seeds" type="range" min="1" max="5" value="2"></div>
+  <div><label for="mode">Who starts it</label><select id="mode"><option value="random">Random accounts</option><option value="influencer">Biggest accounts</option></select></div>
+  <div><label for="budget">Accounts to protect <output id="budget_o">8</output></label><input id="budget" type="range" min="1" max="20" value="8"></div>
+  <div><label for="sims">Simulated worlds <output id="sims_o">80</output></label><input id="sims" type="range" min="20" max="200" step="10" value="80"></div>
+  <div><label for="seed">Random seed</label><input id="seed" type="number" min="0" max="1000000" value="7"></div>
+  <button class="run" type="submit">Run simulation</button>
+</form>
+<div id="err" class="err" hidden></div>
+
+<div class="stage">
+  <section class="pane"><h2>Do nothing</h2><p class="count" id="c_left">Run a simulation to see the rumor spread.</p><canvas id="left" aria-label="Rumor spread with no protection"></canvas></section>
+  <section class="pane"><h2 id="right_title">Firebreak optimizer</h2><p class="count" id="c_right">Pick any plan in the list below to compare it.</p><canvas id="right" aria-label="Rumor spread with the selected plan"></canvas></section>
+</div>
+<div class="bar-ctl"><button class="play" id="play" type="button">Play</button><label for="t" style="margin:0;white-space:nowrap">Step <output id="t_o" style="margin-left:6px">0</output></label><input id="t" type="range" min="0" max="0" value="0"></div>
+<p class="foot" style="margin:6px 2px 0">Both networks show the same single simulated run, chosen as a bad case (80th percentile). The percentages below average all simulated worlds.</p>
+<div class="legend"><span><i style="background:var(--quiet)"></i>Has not heard it</span><span><i style="background:var(--rumor)"></i>Heard the rumor</span><span><i style="background:var(--shield)"></i>Protected account</span><span><i style="background:#fff;border:3px solid var(--ink)"></i>Rumor starter</span></div>
+
+<div class="results">
+  <div><h2>Result</h2><p class="summary" id="summary">Adjust the settings and press Run simulation.</p></div>
+  <div><h2>Compare plans</h2><div class="rows" id="rows" role="group" aria-label="Protection plans"></div></div>
+</div>
+<p class="foot">This is a simulation on generated networks using the independent cascade model. Plans are chosen on one set of simulated worlds and scored on a separate set, so the numbers are not overfitted. It shows a method, not a prediction for any real platform.</p>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+let data = null, pos = null, sel = 'greedy', timer = null;
+const C = {quiet:'#9AA5C4', rumor:'#D6336C', shield:'#1971C2', ink:'#14183A'};
+
+// live labels on sliders
+[['n',v=>v],['p',v=>v+'%'],['seeds',v=>v],['budget',v=>v],['sims',v=>v]].forEach(([id,f]) => {
+  const el = $('#'+id); const upd = () => $('#'+id+'_o').textContent = f(el.value); el.oninput = upd; upd();
+});
+
+function layout(n, edges, seed) {
+  let s = seed + 1; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const x = new Float64Array(n), y = new Float64Array(n);
+  for (let i = 0; i < n; i++) { const a = rnd() * 6.283, r = Math.sqrt(rnd()) * .5; x[i] = .5 + r * Math.cos(a); y[i] = .5 + r * Math.sin(a); }
+  const k = 0.8 / Math.sqrt(n); let temp = 0.1;
+  for (let it = 0; it < 220; it++) {
+    const dx = new Float64Array(n), dy = new Float64Array(n);
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      let ex = x[i] - x[j], ey = y[i] - y[j], d2 = ex*ex + ey*ey + 1e-9, f = k*k / d2;
+      dx[i] += ex*f; dy[i] += ey*f; dx[j] -= ex*f; dy[j] -= ey*f;
+    }
+    for (const [u, v] of edges) {
+      const ex = x[u] - x[v], ey = y[u] - y[v], d = Math.sqrt(ex*ex + ey*ey) + 1e-9, f = d / k;
+      dx[u] -= ex*f; dy[u] -= ey*f; dx[v] += ex*f; dy[v] += ey*f;
+    }
+    for (let i = 0; i < n; i++) {
+      const d = Math.sqrt(dx[i]*dx[i] + dy[i]*dy[i]) + 1e-9, m = Math.min(d, temp) / d;
+      x[i] += dx[i]*m; y[i] += dy[i]*m;
+    }
+    temp *= 0.97;
+  }
+  const minx = Math.min(...x), maxx = Math.max(...x), miny = Math.min(...y), maxy = Math.max(...y);
+  return Array.from(x, (_, i) => [(x[i]-minx)/(maxx-minx||1), (y[i]-miny)/(maxy-miny||1)]);
+}
+
+function draw(canvas, times, plan, t) {
+  const w = canvas.clientWidth, h = Math.round(w * 0.8), dpr = window.devicePixelRatio || 1;
+  canvas.width = w * dpr; canvas.height = h * dpr; canvas.style.height = h + 'px';
+  const g = canvas.getContext('2d'); g.scale(dpr, dpr);
+  const pad = 16, X = i => pad + pos[i][0] * (w - 2*pad), Y = i => pad + pos[i][1] * (h - 2*pad);
+  g.strokeStyle = 'rgba(90,100,140,.22)'; g.lineWidth = 1; g.beginPath();
+  for (const [u, v] of data.graph.edges) { g.moveTo(X(u), Y(u)); g.lineTo(X(v), Y(v)); }
+  g.stroke();
+  const prot = new Set(plan), seeds = new Set(data.seeds); let heard = 0;
+  data.graph.degree.forEach((deg, i) => {
+    const r = 2.6 + Math.sqrt(deg) * 0.9, on = times[i] >= 0 && times[i] <= t;
+    if (on) heard++;
+    g.beginPath(); g.arc(X(i), Y(i), r, 0, 6.283);
+    g.fillStyle = prot.has(i) ? C.shield : on ? C.rumor : C.quiet; g.fill();
+    if (prot.has(i)) { g.lineWidth = 2; g.strokeStyle = '#fff'; g.stroke(); }
+    if (seeds.has(i)) { g.beginPath(); g.arc(X(i), Y(i), r + 3, 0, 6.283); g.lineWidth = 2.5; g.strokeStyle = C.ink; g.stroke(); }
+  });
+  return heard;
+}
+
+function render() {
+  if (!data) return;
+  const t = +$('#t').value, n = data.graph.n; $('#t_o').textContent = t;
+  const row = data.strategies.find(s => s.key === sel);
+  const a = draw($('#left'), data.cascade.none, [], t), b = draw($('#right'), data.cascade[sel], row.inoculated, t);
+  $('#c_left').innerHTML = `Heard the rumor: <b>${a}</b> of ${n}`;
+  $('#c_right').innerHTML = `Heard the rumor: <b>${b}</b> of ${n}. Protected: ${row.inoculated.length}`;
+  $('#right_title').textContent = row.label;
+}
+
+function rows() {
+  $('#rows').innerHTML = data.strategies.map(s => `
+    <button class="row ${s.key}" data-k="${s.key}" aria-pressed="${s.key === sel}">
+      <span>${s.label}</span><span class="track"><b style="width:${s.reach_pct}%"></b></span>
+      <span class="val">${s.reach_pct}%<small>${s.key === 'none' ? 'reached' : '-' + s.reduction_pct + '% vs nothing'}</small></span></button>`).join('');
+  document.querySelectorAll('.row').forEach(b => b.onclick = () => { sel = b.dataset.k; rows(); render(); });
+}
+
+$('#form').onsubmit = async e => {
+  e.preventDefault(); stop();
+  const btn = $('.run'); btn.disabled = true; btn.textContent = 'Running…'; $('#err').hidden = true;
+  const body = {network: $('#network').value, n: +$('#n').value, seeds: +$('#seeds').value, seed_mode: $('#mode').value,
+    p: $('#p').value / 100, budget: +$('#budget').value, sims: +$('#sims').value, seed: +$('#seed').value};
+  try {
+    const r = await fetch('/api/simulate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const j = await r.json();
+    if (!r.ok) throw new Error(Array.isArray(j.detail) ? j.detail.map(d => d.msg).join(', ') : 'The simulation failed. Try fewer accounts or worlds.');
+    data = j; sel = 'greedy'; pos = layout(j.graph.n, j.graph.edges, body.seed);
+    const T = Math.max(...Object.values(j.cascade).flat(), 1);
+    const sl = $('#t'); sl.max = T; sl.value = T;
+    $('#summary').textContent = j.summary; rows(); render();
+  } catch (err) { $('#err').textContent = err.message; $('#err').hidden = false; }
+  btn.disabled = false; btn.textContent = 'Run simulation';
+};
+$('#t').oninput = render;
+function stop() { clearInterval(timer); timer = null; $('#play').textContent = 'Play'; }
+$('#play').onclick = () => {
+  if (!data) return; if (timer) return stop();
+  const sl = $('#t'); if (+sl.value >= +sl.max) sl.value = 0;
+  $('#play').textContent = 'Pause'; render();
+  timer = setInterval(() => { sl.value = +sl.value + 1; render(); if (+sl.value >= +sl.max) stop(); }, 600);
+};
+window.addEventListener('resize', render);
+$('#form').requestSubmit();
+</script>
+</body>
+</html>
